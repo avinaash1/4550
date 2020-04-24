@@ -178,7 +178,7 @@ rownames(test) <- gene_names
 list <- filter(test,is.na(test$length))
 ```
 
-```{r, eval=FALSE, include=FALSE}
+```{r gene length adj, eval=FALSE, include=FALSE}
 # test2 <- mutate(control_backup, length = test)
 # rownames(test2) <- gene_names
 # test2 <- rownames_to_column(test2)
@@ -274,7 +274,7 @@ kable(p_val_adj,caption="Bonferroni p-values")
 
 ```
 
-From the annotated variant calls, 24,831 unique genes with SNVs and/or indels were found. Most of the variance within the dataset was due to the difference between the obese and control groups. In addition, based on the score plot, the variance within the control group was much greater than within the obese group. Since obesity is known to have a genetic component, this result is not surprising. Variants for a set of super obese patients should be more similar than variants for a control group of random people within general population. PCA also showed that NBPF19, SLC15A5, IGF1R, ASIC2, and GALNT9 were responsible for most of the variance between the two groups. These genes were found to have greater V/GBP when compared to the obese group. However, since hypothalamic neurons are difficult to obtain, the control group was collected from car crash donors, thus the control group may not be representative of the general population. For example, mutations in NBPF19 have been associated with neuronal intranuclear inclusion disease, whose symptoms include cognitive impairments such as pyramidal and extrapyramidal symptoms and cerebellar ataxia.<sup>9,10</sup> Thus, variants in genes such as NBPF19 may be overstated in car crash victims.
+From the annotated variant calls, 24,831 unique genes with SNVs and/or indels were found. Most of the variance within the dataset was due to the difference between the obese and control groups. In addition, based on the score plot, the variance within the control group was much greater than within the obese group. Since obesity is known to have a genetic component, this result is not surprising. Variants for a set of super obese patients should be more similar than variants for a control group of random people within general population. Loadings from PC1 from the PCA also showed that NBPF19, SLC15A5, IGF1R, ASIC2, and GALNT9 were responsible for most of the variance between the two groups. A paired t-test, adjusted using Bonferroni correction, showed that of these, variants in NBPF19, ASIC2, and GALNT9 were statistically significant (p < 0.05) between the experimental and control groups. These genes were found to have greater V/GBP when compared to the obese group. However, since hypothalamic neurons are difficult to obtain, the control group was collected from car crash donors, thus the control group may not be representative of the general population. For example, mutations in NBPF19 have been associated with neuronal intranuclear inclusion disease, whose symptoms include cognitive impairments such as pyramidal and extrapyramidal symptoms and cerebellar ataxia.<sup>9,10</sup> Thus, variants in genes such as NBPF19 may be overstated in car crash victims.
 
 ### Genes with the most variants
 
