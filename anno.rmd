@@ -36,7 +36,7 @@ Blood samples were obtained from 5 superobese patients (BMI ≥ 50) from Cedars 
 ```{r patient table, echo=FALSE}
 tab <- read.csv("patient_info.csv")
 colnames(tab)[1] <- "Run"
-kable(tab, caption = "WES Sample Info, some info was not provided for control samples")
+kable(tab, caption = "Table 1. WES Sample Info, some info was not provided for control samples")
 ```
 
 ## WES Pipeline
@@ -238,9 +238,6 @@ ggplot(loading_gg,aes(pl1,pl2)) +
   xlab("PC1") +
   ylab("PC2") +
   ggtitle("Loading Plot")
-# plot(pl1, pl2, xlab="PC1",ylab="PC2", col="white",xlim=c(-0.2,0), ylim=c(-0.2,0.2))
-# text(pl1, pl2, labels=rownames(load1))
-# arrows(0,0, pl1, pl2, col="red")
 ```
 
 ```{r top5, message=FALSE}
@@ -270,15 +267,15 @@ p_val_adj <- p.adjust(p_values,"bonferroni")
 p_val_adj <- as.data.frame(p_val_adj)
 rownames(p_val_adj) <- top5
 
-kable(p_val_adj,caption="Bonferroni p-values")
+kable(p_val_adj,caption="Table 2. Bonferroni p-values")
 
 ```
 
-From the annotated variant calls, 24,831 unique genes with SNVs and/or indels were found. Most of the variance within the dataset was due to the difference between the obese and control groups. In addition, based on the score plot, the variance within the control group was much greater than within the obese group. Since obesity is known to have a genetic component, this result is not surprising. Variants for a set of super obese patients should be more similar than variants for a control group of random people within general population. Loadings from PC1 from the PCA also showed that NBPF19, SLC15A5, IGF1R, ASIC2, and GALNT9 were responsible for most of the variance between the two groups. A paired t-test, adjusted using Bonferroni correction, showed that of these, variants in NBPF19, ASIC2, and GALNT9 were statistically significant (p < 0.05) between the experimental and control groups. These genes were found to have greater V/GBP when compared to the obese group. However, since hypothalamic neurons are difficult to obtain, the control group was collected from car crash donors, thus the control group may not be representative of the general population. For example, mutations in NBPF19 have been associated with neuronal intranuclear inclusion disease, whose symptoms include cognitive impairments such as pyramidal and extrapyramidal symptoms and cerebellar ataxia.<sup>9,10</sup> Thus, variants in genes such as NBPF19 may be overstated in car crash victims.
+From the annotated variant calls, 24,831 unique genes with SNVs and/or indels were found. Most of the variance within the dataset was due to the difference between the obese and control groups. In addition, based on the score plot, the variance within the control group was much greater than within the obese group. Since obesity is known to have a genetic component, this result is not surprising. Variants for a set of super obese patients should be more similar than variants for a control group of random people within general population. Loadings from PC1 from the PCA also showed that NBPF19, SLC15A5, IGF1R, ASIC2, and GALNT9 were responsible for most of the variance between the two groups. A paired t-test, adjusted using Bonferroni correction, showed that of these, variants in NBPF19, ASIC2, and GALNT9 were statistically significant (p < 0.05) between the experimental and control groups (Table 2). These genes were found to have greater V/GBP when compared to the obese group. However, since hypothalamic neurons are difficult to obtain, the control group was collected from car crash donors, thus the control group may not be representative of the general population. For example, mutations in NBPF19 have been associated with neuronal intranuclear inclusion disease, whose symptoms include cognitive impairments such as pyramidal and extrapyramidal symptoms and cerebellar ataxia.<sup>9,10</sup> Thus, variants in genes such as NBPF19 may be overstated in car crash victims.
 
 ### Genes with the most variants
 
-```{r SNVs}
+```{r variants}
 ob <- control[,6:10]
 
 # add col for mean expression
@@ -298,14 +295,21 @@ avg_dif <- as.data.frame(avg_dif)
 top5 <- rownames(avg_dif)[1:5]
 # t test
 dat_top5 <- dat2[dat2$gene %in% top5,]
-rownames(dat_top5) <- top5
 
-dat_top5 <- t(dat_top5[,-1])
+# order desc rather than order they appear
+dat_top5 <- mutate(dat_top5, gene = factor(gene, levels = c("RBFOX1","DSCAM","SORCS2","PKD1L2","PRKN"))) %>% arrange(gene)
+
+top5 <- dat_top5$gene
+dat_top5 <- as.data.frame(dat_top5)
+rownames(dat_top5) <- top5
+dat_top5 <- t(dat_top5)
+dat_top5 <- dat_top5[-1,]
+class(dat_top5) <- "numeric"
 
 ctr_top5 <- dat_top5[1:5,]
 ob_top5 <- dat_top5[6:10,]
 
-t_results <- lapply(1:5,function(i) {
+t_results <- lapply(1:5, function(i) {
   t.test(ctr_top5[,i],ob_top5[,i],paired=TRUE,conf.level=0.95)
 })
 
@@ -318,8 +322,6 @@ p_val_adj <- p.adjust(p_values,"bonferroni")
 p_val_adj <- as.data.frame(p_val_adj)
 rownames(p_val_adj) <- top5
 
-kable(p_val_adj,caption="Bonferroni p-values")
-
 # plot
 c_sds <- rowSds(t(ctr_top5))
 o_sds <- rowSds(t(ob_top5))
@@ -330,17 +332,26 @@ temp <- cbind(o_m,o_sds)
 meanplots <- rbind(meanplots, temp)
 meanplots <- cbind(as.data.frame(meanplots), group)
 meanplots <- rownames_to_column(as.data.frame(meanplots),var = "gene")
-meanplots$gene[6:10] <- top5
+meanplots$gene[6:10] <- as.character(top5)
+colnames(meanplots)[2:3] <- c("mean", "stdev")
 
+mtable <- do.call("cbind", list(c_m,c_sds,o_m,o_sds,avg_dif[1:5,],p_val_adj))
+colnames(mtable) <- c("Control mean V/GBP", "Control SDev", "Obese Mean V/GBP", "Obese SDev", "Mean Difference", "Bonferroni p-value")
+
+# mean diff table
+kable(mtable,caption="Table 3. Genes with the Greatest Difference in Number of Variants")
+
+# same order
 meanplots <- mutate(meanplots, gene = factor(gene, levels = c("RBFOX1","DSCAM","SORCS2","PKD1L2","PRKN")))
 
-ggplot(meanplots,aes(gene,c_m,fill=group)) +
+ggplot(meanplots,aes(gene,mean,fill=group)) +
   geom_col(position="dodge") +
-  geom_errorbar(aes(gene,ymin=c_m-c_sds,ymax=c_m+c_sds),width=0.2,position=position_dodge(0.9))
+  geom_errorbar(aes(gene,ymin=mean-stdev,ymax=mean+stdev),width=0.2,position=position_dodge(0.9)) +
+  ylab("Mean V/GBP") +
+  ggtitle("Genes with the most variants in super obese patients, relative to control")
 ```
 
-
-In addition to PCA, the 5 genes with the greatest number of V/GBP for each group were found. CTNNA3, CSMD1, DSCAM, RBFOX1, and PTPRN2 were the genes with the greatest mean V/GBP for the obese group, while NBPF19, ASIC2, IGF1R, SLC15A5, and PBX3 had the greatest mean V/GBP for the control group. These results corroborate the results of PCA: for the control, all of the genes were in the top 5 loadings for PC1, except for PBX3 which was 7th. 
+In addition to PCA, genes with the greatest difference in the number of V/GBP between the super obese and control groups were found (Table 3). Number of variants in RBFOX1, PKD1L2, DSCAM, SORCS2, and PRKN were all found to be significantly greater in super obese patients compared to the control (Table 4). Bonferroni corrected t-tests were done, and all 5 genes were found to be significantly different.
 
 ### Indel Breakdown
 
