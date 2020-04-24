@@ -243,9 +243,9 @@ ggplot(loading_gg,aes(pl1,pl2)) +
 # arrows(0,0, pl1, pl2, col="red")
 ```
 
-```{r top5}
+```{r top5, message=FALSE}
 top5 <- rownames(as.data.frame(pl1))
-# dat2 <- rownames_to_column(control,var="gene")
+dat2 <- rownames_to_column(control,var="gene")
 dat_top5 <- dat2[dat2$gene %in% top5,]
 rownames(dat_top5) <- top5
 
@@ -285,39 +285,60 @@ ob <- control[,6:10]
 ob <- mutate(ob,Avg=rowMeans(ob))
 ob <- mutate(ob,gene_names)
 
-# get most SNVs in obese patients
-temp <- ob[order(ob$Avg,decreasing=TRUE),]
-temp <- temp[1:5,]
-temp <- gather(temp, key = "sample", value = "SNV", SRR6318351.1,SRR6318352.1,SRR6318353.1,SRR6318354.1,SRR6318355.1)
-
-ggplot(temp,aes(reorder(gene_names,Avg),SNV,fill=sample)) +
-  geom_col(position="dodge") +
-  xlab("Gene") +
-  ylab("Variants per Billion BP of Exome") +
-  ggtitle("Obese Group")
-
 ctr <- control[,1:5]
 
 # add col for mean expression
 ctr <- mutate(ctr,Avg=rowMeans(ctr))
 ctr <- mutate(ctr,gene_names)
 
-# get most SNVs in ctrese patients
-temp <- ctr[order(ctr$Avg,decreasing=TRUE),]
-temp <- temp[1:5,]
-temp <- gather(temp, key = "sample", value = "SNV", SRR5279736.1,SRR5279740.1,SRR5279752.1,SRR5279760.1,SRR5279784.1)
+# list of most difference in avg v/gbp
+avg_dif <- ob$Avg - ctr$Avg
+avg_dif <- sort(avg_dif,decreasing=TRUE)
+avg_dif <- as.data.frame(avg_dif)
+top5 <- rownames(avg_dif)[1:5]
+# t test
+dat_top5 <- dat2[dat2$gene %in% top5,]
+rownames(dat_top5) <- top5
 
-ggplot(temp,aes(reorder(gene_names,Avg),SNV,fill=sample)) +
+dat_top5 <- t(dat_top5[,-1])
+
+ctr_top5 <- dat_top5[1:5,]
+ob_top5 <- dat_top5[6:10,]
+
+t_results <- lapply(1:5,function(i) {
+  t.test(ctr_top5[,i],ob_top5[,i],paired=TRUE,conf.level=0.95)
+})
+
+p_values <- lapply(1:5,function(i) {
+  t_results[[i]][["p.value"]]
+})
+
+p_values <- unlist(p_values)
+p_val_adj <- p.adjust(p_values,"bonferroni")
+p_val_adj <- as.data.frame(p_val_adj)
+rownames(p_val_adj) <- top5
+
+kable(p_val_adj,caption="Bonferroni p-values")
+
+# plot
+c_sds <- rowSds(t(ctr_top5))
+o_sds <- rowSds(t(ob_top5))
+c_m <- rowMeans(t(ctr_top5))
+o_m <- rowMeans(t(ob_top5))
+meanplots <- cbind(c_m,c_sds)
+temp <- cbind(o_m,o_sds)
+meanplots <- rbind(meanplots, temp)
+meanplots <- cbind(as.data.frame(meanplots), group)
+meanplots <- rownames_to_column(as.data.frame(meanplots),var = "gene")
+meanplots$gene[6:10] <- top5
+
+meanplots <- mutate(meanplots, gene = factor(gene, levels = c("RBFOX1","DSCAM","SORCS2","PKD1L2","PRKN")))
+
+ggplot(meanplots,aes(gene,c_m,fill=group)) +
   geom_col(position="dodge") +
-  xlab("Gene") +
-  ylab("Variants per Billion BP of Exome") +
-  ggtitle("Control Group")
+  geom_errorbar(aes(gene,ymin=c_m-c_sds,ymax=c_m+c_sds),width=0.2,position=position_dodge(0.9))
 ```
 
-```{r mean variants for each group}
-
-
-```
 
 In addition to PCA, the 5 genes with the greatest number of V/GBP for each group were found. CTNNA3, CSMD1, DSCAM, RBFOX1, and PTPRN2 were the genes with the greatest mean V/GBP for the obese group, while NBPF19, ASIC2, IGF1R, SLC15A5, and PBX3 had the greatest mean V/GBP for the control group. These results corroborate the results of PCA: for the control, all of the genes were in the top 5 loadings for PC1, except for PBX3 which was 7th. 
 
