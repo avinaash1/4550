@@ -90,7 +90,7 @@ for (i in 2:length(clist)) {
 
 ```{r load data, include=FALSE}
 # USED FOR KNITTING
-load("C:\\Users\\pl9ed\\OneDrive\\Desktop\\vcf\\annotated\\anno.RData")
+load("C:\\Users\\pl9ed\\OneDrive\\Desktop\\vcf\\4550\\anno.RData")
 ```
 
 ### Finding Unique Genes with Variants
@@ -243,7 +243,7 @@ ggplot(loading_gg,aes(pl1,pl2)) +
 # arrows(0,0, pl1, pl2, col="red")
 ```
 
-```{r top5, include=FALSE, eval=FALSE}
+```{r top5}
 top5 <- rownames(as.data.frame(pl1))
 # dat2 <- rownames_to_column(control,var="gene")
 dat_top5 <- dat2[dat2$gene %in% top5,]

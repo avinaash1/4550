@@ -1,0 +1,6 @@
+*.csv
+*.tex
+*.log
+*.Rdata
+*.Rhistory
+*.txt
