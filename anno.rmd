@@ -43,11 +43,97 @@ kable(tab, caption = "Table 1. WES Sample Info, some info was not provided for c
 
 ![Figure 2. The pipeline can be broken down into 3 steps: data pre-processing, variant discovery, and variant prioritization.](pipeline.jpg) 
 
-[See Appendix for Full Unix Scripts](#unix)
+The pipeline was broken up into multiple scripts. As a result, repetitive, non-essential sections such as "module load" or "cd" were excluded.
+
+```{bash, eval=FALSE}
+########################## pre-processing ############################
+# wget SRA manually
+
+# quality control
+fastqc /scratch/pl9ed/project/wes_data/*.fastq
+
+# align reference
+bowtie2-build --threads 8 -f *.fa ref
+
+# fastq > bam
+fileList=($(cat /scratch/pl9ed/project/list.txt))
+cList=($(cat /scratch/pl9ed/project/clist.txt))
+
+fileName=${fileList[$n]}
+cName=${cList[$n]}
+
+n=$SLURM_ARRAY_TASK_ID
+
+echo "aligning " $fileName
+bowtie2 -p 8 -x /scratch/pl9ed/project/refgenome/ref -1 ./"$fileName"_1.fastq -2 ./"$fileName"_2.fastq -S $fileName.sam
+```
 
 The raw dataset was first downloaded from SRA into a scratch subfolder, which was then given read/write/execute permissions. The raw files were converted into both .fastq and .sam files using the SRAToolKit (2.9.1). Alignment was done using Bowtie2 (2.2.9) with the soft-masked, primary assembly reference genome (GRCh38) from ENSEMBL. FastQC (0.11.5) was used to conduct quality control checks on the dataset. Preprocessing resulted in a sam file for each sample.
 
+```{bash, eval=FALSE}
+########################## variant discovery ############################
+# bam > sort/index > mpileup
+echo "converting $fileName to bam"
+samtools view -bS "$fileName".sam > $fileName.bam
+samtools sort -@ 16 "$fileName".bam > "$fileName".sorted.bam
+samtools index -@ 16 "$fileName".sorted.bam
+samtools mpileup -E -@ 16 -uf /scratch/pl9ed/project/refgenome/Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa \
+	"$fileName".sorted.bam > "$fileName".mpileup 
+
+########################## variant prioritization ############################
+# VarScan
+echo "-------------mpileup2snp-------------"
+java -jar VarScan.v2.4.4.jar mpileup2snp $fileName.mpileup --variants > $fileName.v.snp
+echo "-------------mpileup2indel-------------"
+java -jar VarScan.v2.4.4.jar mpileup2indel $fileName.mpileup --variants > $fileName.v.indel
+echo "-------------filter snp-------------"
+java -jar VarScan.v2.4.4.jar filter $fileName.v.snp --indel-file $fileName.v.indel --output-file $fileName.v.snp.filter
+echo "-------------filter indel-------------"
+java -jar VarScan.v2.4.4.jar filter $fileName.v.indel --output-file $fileName.v.indel.filter
+echo "-------------readcounts-------------"
+java -jar VarScan.v2.4.4.jar readcounts $fileName.mpileup --output-file $fileName.readcounts
+
+# bcftools
+echo "Working on $fileName"
+echo "n: $n"
+
+bcftools mpileup -f /scratch/pl9ed/project/refgenome/Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa \
+$fileName.sorted.bam --threads 16 -o $fileName.bcf
+echo "-------calls-------"
+bcftools call $fileName.bcf --threads 16 -mv -Ob -o $fileName.calls.bcf
+echo "-------filter-------"
+bcftools filter -i'%QUAL>20' $fileName.calls.bcf -Ov -o $fileName.calls.filtered.vcf
+```
+
 Following pre-processing, SAMtools (1.10) was used to convert .sam files to sorted BAM files for further processing. In contrast to the original pipeline, variant calling and filtering was done using bcftools (1.9) rather than VarScan. VarScan requires SNVs and indels to be processed separately, whereas the BCF/VCF format succinctly holds information for both variants. Thus, bcftools was used to create an mpileup using the sorted BAM files, followed by variant calling, and filtering. Filtering was done based on quality scores with a cutoff QUAL of 20. 
+
+```{bash, eval=FALSE}
+########################## annotate ############################
+echo "fileName: $fileName"
+echo "cName: $cName"
+
+# vcf to avninput - easier to process later
+./convert2annovar.pl -format vcf4 ../wes_data/$fileName.calls.filtered.vcf > $fileName.avinput
+./convert2annovar.pl -format vcf4 ../control/$cName.calls.filtered.vcf > $cName.avinput
+
+# annotate
+./table_annovar.pl $fileName.avinput humandb/ \
+	-buildver hg19 \
+	-out $fileName \
+	-remove -protocol refGene,cytoBand,exac03,avsnp147,dbnsfp30a \
+	-operation gx,r,f,f,f \
+	-nastring . \
+	-csvout -polish -xref example/gene_xref.txt
+./table_annovar.pl $cName.avinput humandb/ \
+	-buildver hg19 \
+	-out $cName \
+	-remove -protocol refGene,cytoBand,exac03,avsnp147,dbnsfp30a \
+	-operation gx,r,f,f,f \
+	-nastring . \
+	-csvout -polish -xref example/gene_xref.txt
+
+done
+```
 
 For readability, the BCF files were converted to VCF, then to avinput before annotation using ANNOVAR (2019Oct24 version), resulting in an annotated csv file for each sample. These files were then used to identify the number of SNVs and indels associated with each gene for each sample, adjusted for read depth, leading to variants per billion BP of exome (V/GBP). Variants associated with multiple genes were counted multiple times. Principal component analysis (PCA) was performed on the dataset, and genes with the highest V/GBP were identified for both obese and control groups. Variants found exclusively in the obese group were then mapped to their chromosomes based on position.
 
@@ -88,6 +174,8 @@ for (i in 2:length(clist)) {
 # Data saved. Don't need to run this chunk again
 ```
 
+Data was read in from annotated variant calls, used to create two lists that contain the names of the variables for each sample, and each group was merged into master obese and control sets. 
+
 ```{r load data, include=FALSE}
 # USED FOR KNITTING
 load("C:\\Users\\pl9ed\\OneDrive\\Desktop\\vcf\\4550\\anno.RData")
@@ -110,8 +198,25 @@ glist <- cSplit(glist,"gene",sep=";")
 # to: Rivanna
 ```
 
+Genes associated with each variant were identified. Intergenic variants are counted multiple times, once for each gene, using cSplit. glist is a table of genes associated with each variant. glist_u is a list of unique genes found within that list. 
+
 ### Create Dataset of Variants per Billion BP of Exome
 
+```{bash list, eval=FALSE}
+# SNV/Indel counts:
+# ug.csv and glist.csv from R script
+# create CSV of [Gene, Count] for each sample
+echo "Working on $oName and $cName"
+
+for i in $(cat ../av_scripts/ug.csv)
+do
+
+gcount=$(grep $i $oName*.csv | wc -l)
+echo "$i, $gcount" >> ../gene_counts/$oName.count.csv
+
+ccount=$(grep $i $cName*.csv | wc -l)
+echo "$i, $ccount" >> ../gene_counts/$cName.count.csv
+```
 ```{r create count set}
 # control is actually counts for all 10
 # name control is leftover - didn't want to change 
@@ -155,6 +260,8 @@ control <- mutate(control,SRR6318355.1 = SRR6318355.1  *1E9 / 12.58E9)
 rownames(control) <- gene_names
 
 ```
+
+The number of variants associated with each gene were found for each patient and used to create an overall dataset. This dataset was then adjusted for sequencing depth. Rows correspond to genes; columns correspond to patients. Values are the number of variants for each gene for each patient.
 
 ```{r glength, eval=FALSE, include=FALSE}
 # ad just for gene length
@@ -441,109 +548,7 @@ For the obese group, CTNNA3 was found to have higher V/GBP in super obese patien
 
 # Appendix
 
-<a name="unix"></a> 
-
-### Overall Pipeline
-
-The pipeline was broken up into multiple scripts. As a result, repetitive sections such as module load or cd were excluded. See methods section for relevant modules and their versions.
-
 ```{bash, eval=FALSE}
-########################## pre-processing ############################
-# wget SRA manually
-
-# quality control
-fastqc /scratch/pl9ed/project/wes_data/*.fastq
-
-# align reference
-bowtie2-build --threads 8 -f *.fa ref
-
-# fastq > bam
-fileList=($(cat /scratch/pl9ed/project/list.txt))
-cList=($(cat /scratch/pl9ed/project/clist.txt))
-
-fileName=${fileList[$n]}
-cName=${cList[$n]}
-
-n=$SLURM_ARRAY_TASK_ID
-
-echo "aligning " $fileName
-bowtie2 -p 8 -x /scratch/pl9ed/project/refgenome/ref -1 ./"$fileName"_1.fastq -2 ./"$fileName"_2.fastq -S $fileName.sam
-
-########################## variant discovery ############################
-# bam > sort/index > mpileup
-echo "converting $fileName to bam"
-samtools view -bS "$fileName".sam > $fileName.bam
-samtools sort -@ 16 "$fileName".bam > "$fileName".sorted.bam
-samtools index -@ 16 "$fileName".sorted.bam
-samtools mpileup -E -@ 16 -uf /scratch/pl9ed/project/refgenome/Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa \
-	"$fileName".sorted.bam > "$fileName".mpileup 
-
-########################## variant prioritization ############################
-# VarScan
-echo "-------------mpileup2snp-------------"
-java -jar VarScan.v2.4.4.jar mpileup2snp $fileName.mpileup --variants > $fileName.v.snp
-echo "-------------mpileup2indel-------------"
-java -jar VarScan.v2.4.4.jar mpileup2indel $fileName.mpileup --variants > $fileName.v.indel
-echo "-------------filter snp-------------"
-java -jar VarScan.v2.4.4.jar filter $fileName.v.snp --indel-file $fileName.v.indel --output-file $fileName.v.snp.filter
-echo "-------------filter indel-------------"
-java -jar VarScan.v2.4.4.jar filter $fileName.v.indel --output-file $fileName.v.indel.filter
-echo "-------------readcounts-------------"
-java -jar VarScan.v2.4.4.jar readcounts $fileName.mpileup --output-file $fileName.readcounts
-
-# bcftools
-echo "Working on $fileName"
-echo "n: $n"
-
-bcftools mpileup -f /scratch/pl9ed/project/refgenome/Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa \
-$fileName.sorted.bam --threads 16 -o $fileName.bcf
-echo "-------calls-------"
-bcftools call $fileName.bcf --threads 16 -mv -Ob -o $fileName.calls.bcf
-echo "-------filter-------"
-bcftools filter -i'%QUAL>20' $fileName.calls.bcf -Ov -o $fileName.calls.filtered.vcf
-
-########################## annotate ############################
-echo "fileName: $fileName"
-echo "cName: $cName"
-
-cd /scratch/pl9ed/project/annovar
-
-# vcf to avninput - easier to process later
-./convert2annovar.pl -format vcf4 ../wes_data/$fileName.calls.filtered.vcf > $fileName.avinput
-./convert2annovar.pl -format vcf4 ../control/$cName.calls.filtered.vcf > $cName.avinput
-
-# annotate
-./table_annovar.pl $fileName.avinput humandb/ \
-	-buildver hg19 \
-	-out $fileName \
-	-remove -protocol refGene,cytoBand,exac03,avsnp147,dbnsfp30a \
-	-operation gx,r,f,f,f \
-	-nastring . \
-	-csvout -polish -xref example/gene_xref.txt
-./table_annovar.pl $cName.avinput humandb/ \
-	-buildver hg19 \
-	-out $cName \
-	-remove -protocol refGene,cytoBand,exac03,avsnp147,dbnsfp30a \
-	-operation gx,r,f,f,f \
-	-nastring . \
-	-csvout -polish -xref example/gene_xref.txt
-
-# SNV/Indel counts:
-# ug.csv and glist.csv from R script
-# create CSV of [Gene, Count] for each sample
-echo "Working on $oName and $cName"
-
-for i in $(cat ../av_scripts/ug.csv)
-do
-
-gcount=$(grep $i $oName*.csv | wc -l)
-echo "$i, $gcount" >> ../gene_counts/$oName.count.csv
-
-ccount=$(grep $i $cName*.csv | wc -l)
-echo "$i, $ccount" >> ../gene_counts/$cName.count.csv
-
-done
-
 ########################## visualize ############################
 # bam to bedgraph
 bedtools genomecov -bg -ibam SRR6318351.1.sorted.bam > SRR6318351.1.sorted.forbigwig.bedgraph

@@ -454,7 +454,7 @@ summary {
 <h1>Methods and Materials</h1>
 <div id="library-preparation-and-dataset" class="section level2">
 <h2>Library Preparation and Dataset</h2>
-<p>Blood samples were obtained from 5 superobese patients (BMI ≥ 50) from Cedars Sinai. Peripheral blood mononuclear cells were obtained from these blood draws and reprogrammed to create an induced pluripotent stem cell (iPSC) line as described by Barrett et. al.<sup>7</sup> These iPSCs were then used to create iPSC derived hypothalamic neurons (iHTNs), which were then used for whole-exome sequencing using the Agilent SureSelect Human All Exon V4 Kit.2 Library preparation was done using Agilent SureSelect Human All Exon V4 kit (Agilent Technologies, CA, USA). 180-280 bp fragments were generated from 1 μg of genomic DNA with a M200 shearing system (Covaris, Massachusetts, USA), followed by end-repair, A-tailing, adapter ligation, PCR enrichment, and hybridization with biotin probes for capture with streptomycin. Indexing PCR was performed following library capture. These PCR products were then purified using the AMPureXP system and quantified using Agilent high sensitivity DNA assay with the Agilent Bioanalyzer 2100 system. Reads were done with HiSeq X Ten (Illumina, San Diego, CA) with paired-end 2x150bp sequencing settings for an average sequencing depth of approximately 43.5M reads.2 The dataset from Rajamani et al. was then processed using the WES pipeline described by Meena et al. (Fig. 2)<sup>8</sup></p>
+<p>Blood samples were obtained from 5 superobese patients (BMI ≥ 50) from Cedars Sinai. Peripheral blood mononuclear cells were obtained from these blood draws and reprogrammed to create an induced pluripotent stem cell (iPSC) line as described by Barrett et. al.<sup>7</sup> These iPSCs were then used to create iPSC derived hypothalamic neurons (iHTNs), which were then used for whole-exome sequencing using the Agilent SureSelect Human All Exon V4 Kit.2 Library preparation was done using Agilent SureSelect Human All Exon V4 kit (Agilent Technologies, CA, USA). 180-280 bp fragments were generated from 1 μg of genomic DNA with a M200 shearing system (Covaris, Massachusetts, USA), followed by end-repair, A-tailing, adapter ligation, PCR enrichment, and hybridization with biotin probes for capture with streptomycin. Indexing PCR was performed following library capture. These PCR products were then purified using the AMPureXP system and quantified using Agilent high sensitivity DNA assay with the Agilent Bioanalyzer 2100 system. Reads were done with HiSeq X Ten (Illumina, San Diego, CA) with paired-end 2x150bp sequencing settings for an average sequencing depth of approximately 43.5M reads.<sup>2</sup> The dataset from Rajamani et al. was then processed using the WES pipeline described by Meena et al. (Fig. 2)<sup>8</sup></p>
 <table>
 <caption>Table 1. WES Sample Info, some info was not provided for control samples</caption>
 <thead>
@@ -628,6 +628,7 @@ for (i in 2:length(clist)) {
   dat_c &lt;- rbind(dat_c,get(clist[i]))
 }
 # Data saved. Don&#39;t need to run this chunk again</code></pre>
+<p>Read in data from annotated variant calls, create two lists that contain the names of the variables for each sample, and merge each group into a master obese and control set.</p>
 </div>
 <div id="finding-unique-genes-with-variants" class="section level3">
 <h3>Finding Unique Genes with Variants</h3>
@@ -643,9 +644,24 @@ colnames(glist) &lt;- &quot;gene&quot;
 glist &lt;- cSplit(glist,&quot;gene&quot;,sep=&quot;;&quot;)
 
 # to: Rivanna</code></pre>
+<p>Identify which genes the variants belong to. Intergenic variants are counted multiple times, once for each gene, using cSplit. glist is a table of genes associated with each variant. glist_u is a list of unique genes found within that list.</p>
 </div>
 <div id="create-dataset-of-variants-per-billion-bp-of-exome" class="section level3">
 <h3>Create Dataset of Variants per Billion BP of Exome</h3>
+<pre class="bash"><code># SNV/Indel counts:
+# ug.csv and glist.csv from R script
+# create CSV of [Gene, Count] for each sample
+echo &quot;Working on $oName and $cName&quot;
+
+for i in $(cat ../av_scripts/ug.csv)
+do
+
+gcount=$(grep $i $oName*.csv | wc -l)
+echo &quot;$i, $gcount&quot; &gt;&gt; ../gene_counts/$oName.count.csv
+
+ccount=$(grep $i $cName*.csv | wc -l)
+echo &quot;$i, $ccount&quot; &gt;&gt; ../gene_counts/$cName.count.csv</code></pre>
+<p>Create a CSV file of how many variants were found for each gene.</p>
 <pre class="r"><code># control is actually counts for all 10
 # name control is leftover - didn&#39;t want to change 
 temp &lt;- read.csv(&quot;SRR5279736.1.csv&quot;,header=FALSE)
@@ -686,6 +702,7 @@ control &lt;- mutate(control,SRR6318355.1 = SRR6318355.1  *1E9 / 12.58E9)
 
 # rownames(control) &lt;- nl_names
 rownames(control) &lt;- gene_names</code></pre>
+<p>Create a dataset and adjust numbers for sequencing depth. Rows correspond to genes, columns to patients. Values are the number of variants for each gene for each patient. This dataset is then used for subsequent analysis.</p>
 </div>
 </div>
 </div>
@@ -763,34 +780,67 @@ p_val_adj &lt;- p.adjust(p_values,&quot;bonferroni&quot;)
 p_val_adj &lt;- as.data.frame(p_val_adj)
 rownames(p_val_adj) &lt;- top5
 
-kable(p_val_adj,caption=&quot;Table 2. Bonferroni p-values&quot;)</code></pre>
+# means for table
+ctr_means &lt;- colMeans(ctr_top5)
+ctr_sdev &lt;- colSds(ctr_top5)
+ob_means &lt;- colMeans(ob_top5)
+ob_sdev &lt;- colSds(ob_top5)
+
+table2 &lt;- do.call(&quot;cbind&quot;, list(ctr_means, ctr_sdev, ob_means, ob_sdev, p_val_adj))
+colnames(table2) &lt;- c(&quot;Control Mean V/GBP&quot;, &quot;Control Stdev&quot;, &quot;Obese Mean V/GBP&quot;, &quot;Obese Stdev&quot;, &quot;Bonferroni p-value&quot;)
+
+kable(table2,caption=&quot;Table 2. T-Test for PC1 Loadings&quot;)</code></pre>
 <table>
-<caption>Table 2. Bonferroni p-values</caption>
+<caption>Table 2. T-Test for PC1 Loadings</caption>
 <thead>
 <tr class="header">
 <th></th>
-<th align="right">p_val_adj</th>
+<th align="right">Control Mean V/GBP</th>
+<th align="right">Control Stdev</th>
+<th align="right">Obese Mean V/GBP</th>
+<th align="right">Obese Stdev</th>
+<th align="right">Bonferroni p-value</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td>NBPF19</td>
+<td align="right">96.66375</td>
+<td align="right">23.85294</td>
+<td align="right">7.420957</td>
+<td align="right">1.5907708</td>
 <td align="right">0.0046334</td>
 </tr>
 <tr class="even">
 <td>SLC15A5</td>
+<td align="right">74.87374</td>
+<td align="right">27.59062</td>
+<td align="right">1.080120</td>
+<td align="right">0.3103447</td>
 <td align="right">0.0194378</td>
 </tr>
 <tr class="odd">
 <td>IGF1R</td>
+<td align="right">67.53836</td>
+<td align="right">27.15291</td>
+<td align="right">12.207998</td>
+<td align="right">1.5825894</td>
 <td align="right">0.0587219</td>
 </tr>
 <tr class="even">
 <td>ASIC2</td>
+<td align="right">76.25429</td>
+<td align="right">17.55454</td>
+<td align="right">4.383526</td>
+<td align="right">1.7341825</td>
 <td align="right">0.0045692</td>
 </tr>
 <tr class="odd">
 <td>GALNT9</td>
+<td align="right">84.77704</td>
+<td align="right">14.61269</td>
+<td align="right">21.034352</td>
+<td align="right">4.1185169</td>
 <td align="right">0.0049079</td>
 </tr>
 </tbody>
@@ -859,19 +909,19 @@ meanplots$gene[6:10] &lt;- as.character(top5)
 colnames(meanplots)[2:3] &lt;- c(&quot;mean&quot;, &quot;stdev&quot;)
 
 mtable &lt;- do.call(&quot;cbind&quot;, list(c_m,c_sds,o_m,o_sds,avg_dif[1:5,],p_val_adj))
-colnames(mtable) &lt;- c(&quot;Control mean V/GBP&quot;, &quot;Control SDev&quot;, &quot;Obese Mean V/GBP&quot;, &quot;Obese SDev&quot;, &quot;Mean Difference&quot;, &quot;Bonferroni p-value&quot;)
+colnames(mtable) &lt;- c(&quot;Control mean V/GBP&quot;, &quot;Control Stdev&quot;, &quot;Obese Mean V/GBP&quot;, &quot;Obese Stdev&quot;, &quot;Mean Difference&quot;, &quot;Bonferroni p-value&quot;)
 
 # mean diff table
-kable(mtable,caption=&quot;Table 3. Genes with the Greatest Difference in Number of Variants&quot;)</code></pre>
+kable(mtable,caption=&quot;Table 3. T-Test for Genes with the Greatest Difference in V/GBP&quot;)</code></pre>
 <table>
-<caption>Table 3. Genes with the Greatest Difference in Number of Variants</caption>
+<caption>Table 3. T-Test for Genes with the Greatest Difference in V/GBP</caption>
 <thead>
 <tr class="header">
 <th></th>
 <th align="right">Control mean V/GBP</th>
-<th align="right">Control SDev</th>
+<th align="right">Control Stdev</th>
 <th align="right">Obese Mean V/GBP</th>
-<th align="right">Obese SDev</th>
+<th align="right">Obese Stdev</th>
 <th align="right">Mean Difference</th>
 <th align="right">Bonferroni p-value</th>
 </tr>
@@ -1097,19 +1147,6 @@ cd /scratch/pl9ed/project/annovar
     -nastring . \
     -csvout -polish -xref example/gene_xref.txt
 
-# SNV/Indel counts:
-# ug.csv and glist.csv from R script
-# create CSV of [Gene, Count] for each sample
-echo &quot;Working on $oName and $cName&quot;
-
-for i in $(cat ../av_scripts/ug.csv)
-do
-
-gcount=$(grep $i $oName*.csv | wc -l)
-echo &quot;$i, $gcount&quot; &gt;&gt; ../gene_counts/$oName.count.csv
-
-ccount=$(grep $i $cName*.csv | wc -l)
-echo &quot;$i, $ccount&quot; &gt;&gt; ../gene_counts/$cName.count.csv
 
 done
 
