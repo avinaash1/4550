@@ -16,6 +16,9 @@ library(magrittr)
 library(knitr)
 library(matrixStats)
 ```
+# Abstract
+With the prevalence of obesity nearly doubling in the past two decades, it has become increasingly important to study this illness. Contributing to a variety of diseases, the obesity epidemic has resulted in an increase in heart disease, stroke, and type 2 diabetes as well. Additionally, in 2008 obesity was associated with almost $150 billion in American Healthcare system costs.<sup>1</sup> Due to obesity’s polygenic nature, many recent studies have been focusing on studying the role of genetics in obesity onset. Mutations in hypothalamic specific genes suggest that this brain region plays a role in onset.<sup>2</sup>Furthermore, many genome-wide association studies (GWAS) have shown that hunger signaling has a genetic component as well.<sup>4</sup> Our project serves to study obesity by conducting whole exome sequencing (WES) analysis. This was done by comparing hypothalamic neurons from obese patients to a reference genome. The pipeline used indicated Single Nucleotide Variants (SNVS) and Insertion/deletion (Indel) base pair sequences present when comparing the two genomes.<sup>6</sup> Our study offered an exploratory data analysis into genetic variants present in individuals with extreme obesity, and identifies potential routes for further obesity genetics research. Results indicated that our control group had more genetic variants existed in the control, normal weight group. However this could be attributed due to the fact that the control group dna sequences were obtained from car crash victims. Further analysis indicated that RBFOX1, DSCAM, SORCS2, PKD1L2, and PRKN were the genes most responsible for genetic variants present in super obese patients. Further research can be conducted involving these specific genes role in obesity. 
+
 
 # Introduction
 
@@ -111,7 +114,11 @@ echo "-------filter-------"
 bcftools filter -i'%QUAL>20' $fileName.calls.bcf -Ov -o $fileName.calls.filtered.vcf
 ```
 
-Following pre-processing, SAMtools (1.10) was used to convert .sam files to sorted BAM files for further processing. In contrast to the original pipeline, variant calling and filtering was done using bcftools (1.9) rather than VarScan. VarScan requires SNVs and indels to be processed separately, whereas Binary Variant Call Format (BCF) / Variant Call Format (VCF) succinctly holds information for both variants. Thus, bcftools was used to create a BCF file containing all the variant data on a single nucleotide level from sorted BAM files, followed by variant calling, and filtering. Filtering was done based on quality scores with a cutoff QUAL of 20. 
+<<<<<<< HEAD
+Following pre-processing, SAMtools (1.10) was used to convert .sam files to sorted BAM files for further processing. In contrast to the original pipeline, variant calling and filtering was done using bcftools (1.9) rather than VarScan. VarScan requires SNVs and indels to be processed separately, whereas Binary Variant Call Format (BCF) / Variant Call Format (VCF) succinctly holds information for both variants. Thus, bcftools was used to create an mpileup file (containing the output of BCF/VCF files) from sorted BAM files, followed by variant calling, and filtering. Filtering was done based on quality scores with a cutoff QUAL of 20. 
+=======
+Following pre-processing, SAMtools (1.10) was used to convert .sam files to sorted BAM files for further processing. In contrast to the original pipeline, variant calling and filtering was done using bcftools (1.9) rather than VarScan. VarScan requires SNVs and indels to be processed separately, whereas the BCF/VCF format succinctly holds information for both variants. Thus, bcftools was used to create an mpileup using the sorted BAM files, followed by variant calling, and filtering. Filtering was done based on quality scores with a cutoff QUAL of 20. 
+>>>>>>> parent of a2f74e1... Update anno.rmd
 
 ```{bash, eval=FALSE}
 ########################## annotate ############################
@@ -139,7 +146,7 @@ echo "cName: $cName"
 	-csvout -polish -xref example/gene_xref.txt
 ```
 
-For readability, the BCF files were converted to VCF, then to avinput before annotation using ANNOVAR (2019Oct24 version), resulting in an annotated csv file for each sample. These files were then used to identify the number of SNVs and indels associated with each gene for each sample, adjusted for sequencing depth, leading to variants per billion BP of exome (V/GBP). Variants associated with multiple genes were counted multiple times. Principal component analysis (PCA) was performed on the dataset in order to identify which genes were responsible for the variance between the control and obese groups. These genes were then tested for significance using t-tests with Bonferroni correction. In addition, genes that had preferentially higher V/GBP in the obese group were identified based on mean difference in V/GBP between obese and control groups, and were tested for significance in the same manner. Variants found exclusively in the obese group were then mapped to their position within each chromosome with a bin width of 100000BP.
+For readability, the BCF files were converted to VCF, then to avinput before annotation using ANNOVAR (2019Oct24 version), resulting in an annotated csv file for each sample. These files were then used to identify the number of SNVs and indels associated with each gene for each sample, adjusted for sequencing depth, leading to variants per billion BP of exome (V/GBP). Variants associated with multiple genes were counted multiple times. Principal component analysis (PCA) was performed on the dataset in order to identify which genes were responsible for the variance between the control and obese groups. These genes were then tested for significance using t-tests with Bonferroni correction. In addition, genes that had preferentially higher V/GBP in the obese group were identified based on mean difference in V/GBP between obese and control groups, and were tested for significance in the same manner. Variants found exclusively in the obese group were then mapped to their position within each chromosome with a bin width of 100000BP. ([See Appendix](#positionplot)) 
 
 ## RScript for Post-Processing
 
@@ -304,7 +311,7 @@ control <- control * 1E9 / test # adjusted for gene length
 
 # Results
 
-### Principal Component Analysis
+### PCA
 
 ```{r pca, message=FALSE}
 Yo = control - rowMeans(control)
@@ -397,11 +404,9 @@ colnames(table2) <- c("Control Mean V/GBP", "Control Stdev", "Obese Mean V/GBP",
 
 kable(table2,caption="Table 2. T-Test for PC1 Loadings")
 
-pcplot <- cbind(ctr_means,)
-
 ```
 
-From the annotated variant calls, 24,831 unique genes with SNVs and/or indels were found. Most of the variance within the dataset was due to the difference between the obese and control groups. In addition, based on the score plot, the variance within the control group was much greater than within the obese group. Since obesity is known to have a genetic component, this result is not surprising. Variants for a set of super obese patients should be more similar than variants for a control group of random people within general population. Loadings from PC1 from the PCA also showed that NBPF19, SLC15A5, IGF1R, ASIC2, and GALNT9 were responsible for most of the variance between the two groups. A paired t-test, adjusted using Bonferroni correction, showed that of these, variants in NBPF19, ASIC2, and GALNT9 were statistically significant (p < 0.05) between the experimental and control groups (Table 2). These genes were found to have greater V/GBP when compared to the obese group. 
+From the annotated variant calls, 24,831 unique genes with SNVs and/or indels were found. Most of the variance within the dataset was due to the difference between the obese and control groups. In addition, based on the score plot, the variance within the control group was much greater than within the obese group. Since obesity is known to have a genetic component, this result is not surprising. Variants for a set of super obese patients should be more similar than variants for a control group of random people within general population. Loadings from PC1 from the PCA also showed that NBPF19, SLC15A5, IGF1R, ASIC2, and GALNT9 were responsible for most of the variance between the two groups. A paired t-test, adjusted using Bonferroni correction, showed that of these, variants in NBPF19, ASIC2, and GALNT9 were statistically significant (p < 0.05) between the experimental and control groups (Table 2). These genes were found to have greater V/GBP when compared to the obese group. However, since hypothalamic neurons are difficult to obtain, the control group was collected from car crash donors, thus the control group may not be representative of the general population. For example, mutations in NBPF19 have been associated with neuronal intranuclear inclusion disease, whose symptoms include cognitive impairments such as pyramidal and extrapyramidal symptoms and cerebellar ataxia.<sup>9,10</sup> Thus, variants in genes such as NBPF19 may be overstated in car crash victims.
 
 ### Genes with the most variants
 
@@ -474,22 +479,15 @@ kable(mtable,caption="Table 3. T-Test for Genes with the Greatest Difference in 
 # same order
 meanplots <- mutate(meanplots, gene = factor(gene, levels = c("RBFOX1","DSCAM","SORCS2","PKD1L2","PRKN")))
 
-# stars
-
-sig <- as.data.frame(meanplots$mean)
-sig <- cbind(sig,c("","","","","","*", "*", "**", "***", "***"))
-colnames(sig) <- c("mean","star")
-
 ggplot(meanplots,aes(gene,mean,fill=group)) +
   geom_col(position="dodge") +
   geom_errorbar(aes(gene,ymin=mean-stdev,ymax=mean+stdev),width=0.2,position=position_dodge(0.9)) +
   ylab("Mean V/GBP") +
-  labs(caption="Figure 5. Genes with the most variants in super obese patients, relative to control. \n* for p < 0.05, ** for p < 0.01, ***  for p < 0.001") +
-  theme(plot.caption = element_text(hjust=0.45)) +
-  geom_text(data=sig, aes(meanplots$gene),label = sig$star, position=position_stack(), vjust=-2, hjust=-0.1)
+  labs(caption="Figure 5. Genes with the most variants in super obese patients, relative to control") +
+  theme(plot.caption = element_text(hjust=0.45))
 ```
 
-In addition to PCA, genes with the greatest difference in the number of V/GBP between the super obese and control groups were found (Table 3). Number of variants in RBFOX1, DSCAM, SORCS2, PKD1L2, and PRKN were all found to be significantly greater in super obese patients compared to the control (Table 4). Bonferroni corrected t-tests were done, and all 5 genes were found to have significantly different numbers of variants.
+In addition to PCA, genes with the greatest difference in the number of V/GBP between the super obese and control groups were found (Table 3). Number of variants in RBFOX1, PKD1L2, DSCAM, SORCS2, and PRKN were all found to be significantly greater in super obese patients compared to the control (Table 4). Bonferroni corrected t-tests were done, and all 5 genes were found to be significantly different.
 
 ### Indel Breakdown
 
@@ -546,10 +544,10 @@ From the indel data obtained, only the variants among the first twenty three chr
 # Discussion
 
 ### Limitations
-Since no gene expression data was available, it is difficult to make causal claims for extreme obesity. Instead, this study aims to identify genes that may be linked to obesity by identifying which genes among super obese patients showed the greatest number of variants. Furthermore, it may be possible that certain mutations in NBPF19, ASIC2, IGF1R, SLC15A5, and GALNT9 are inversely correlated with obesity as they had the greatest contribution to PC1. However, further research is necessary to confirm this hypothesis, as this difference may be due to sampling bias when obtaining the control samples from car crash victims. As a result, the control group may not be representative of the general population. For example, mutations in NBPF19 have been associated with neuronal intranuclear inclusion disease, whose symptoms include cognitive impairments such as pyramidal and extrapyramidal symptoms and cerebellar ataxia.<sup>9,10</sup> Thus, variants in genes such as NBPF19 may be overstated in car crash victims, and these differences in variants may be due to bias within the control group rather than 
+Since no gene expression data was available, it is difficult to make causal claims for extreme obesity. Instead, this study aims to identify genes that may be linked to obesity by identifying which genes among super obese patients showed the greatest number of variants. Furthermore, it may be possible that certain mutations in NBPF19, ASIC2, IGF1R, SLC15A5, and PBX3 are inversely correlated with obesity as they had the greatest contribution to PC1. However, further research is necessary to confirm this hypothesis, as this difference may be due to sampling bias when obtaining the control samples from car crash victims.
 
 ### Future Work
-Our study offers an exploratory analysis into genetic variants in extreme forms of obesity, and identifies potential avenues for further research. Interestingly, a number of genes were found to contain greater V/GBP in the control than the obese group. As mentioned above,  certain mutations in NBPF19, ASIC2, IGF1R, SLC15A5, and GALNT9 may inversely correlate with obesity, but possible sampling bias may affect these results. Using iHTNs obtained from the general population rather than HTNs from car accident donors in a future study may help eliminate potential sampling biases. 
+Our study offers an exploratory analysis into genetic variants in extreme forms of obesity, and identifies potential avenues for further research. Interestingly, a number of genes were found to contain greater V/GBP in the control than the obese group. As mentioned above,  certain mutations in NBPF19, ASIC2, IGF1R, SLC15A5, and PBX3 may inversely correlate with obesity, but possible sampling bias may affect these results. Using iHTNs obtained from the general population rather than HTNs from car accident donors in a future study may help eliminate potential sampling biases. 
 
 For the obese group, CTNNA3 was found to have higher V/GBP in super obese patients compared to the control. This result further confirms earlier findings that link CTNNA3 to metabolic syndrome in Africans and to arrhythmogenic right ventricular dysplasia, which is unsurprising given the correlation between obesity and cardiovascular disease.<sup>11,12</sup> Furthermore, several other genes were identified as having greater V/GBP. A follow up study using iHTNs from the general population, paired with gene expression data, would help to validate our exploratory results.
 
@@ -592,7 +590,7 @@ rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/bedGraph
 
 Scaffolds not included.
 
-```{r position histogram, warning=FALSE, include=FALSE, eval=FALSE}
+```{r position histogram, warning=FALSE}
 #only do chromosomes 1-22, X/Y
 chr <- c(1:22,"X","Y")
 dif <-setdiff(dat,dat_c)
