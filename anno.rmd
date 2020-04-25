@@ -1,7 +1,7 @@
 ---
 title: 'WES of Super Obese Patients: Neurological Aspects of Severe Obesity'
 author: "Avinaash Pavuloori, Matthew Cousins, Pai Li"
-date: "4/19/2020"
+date: "4/26/2020"
 output:
   html_document:
     code_folding: hide
@@ -31,7 +31,7 @@ For this project, whole-exome sequencing (WES) analysis of hypothalamic neurons 
 
 ## Library Preparation and Dataset
 
-Blood samples were obtained from 5 superobese patients (BMI ≥ 50) from Cedars Sinai. Peripheral blood mononuclear cells were obtained from these blood draws and reprogrammed to create an induced pluripotent stem cell (iPSC) line as described by Barrett et. al.7 These iPSCs were then used to create iPSC derived hypothalamic neurons (iHTNs), which were then used for whole-exome sequencing using the Agilent SureSelect Human All Exon V4 Kit.2 Library preparation was done using Agilent SureSelect Human All Exon V4 kit (Agilent Technologies, CA, USA). 180-280 bp fragments were generated from 1 μg of genomic DNA with a M200 shearing system (Covaris, Massachusetts, USA), followed by end-repair, A-tailing, adapter ligation, PCR enrichment, and hybridization with biotin probes for capture with streptomycin. Indexing PCR was performed following library capture. These PCR products were then purified using the AMPureXP system and quantified using Agilent high sensitivity DNA assay with the Agilent Bioanalyzer 2100 system. Reads were done with HiSeq X Ten (Illumina, San Diego, CA) with paired-end 2x150bp sequencing settings for an average sequencing depth of approximately 43.5M reads.2 The dataset from Rajamani et al. was then processed using the WES pipeline described by Meena et al. (Fig. 2)<sup>8</sup>
+Blood samples were obtained from 5 superobese patients (BMI ≥ 50) from Cedars Sinai. Peripheral blood mononuclear cells were obtained from these blood draws and reprogrammed to create an induced pluripotent stem cell (iPSC) line as described by Barrett et. al.<sup>7</sup> These iPSCs were then used to create iPSC derived hypothalamic neurons (iHTNs), which were then used for whole-exome sequencing using the Agilent SureSelect Human All Exon V4 Kit.2 Library preparation was done using Agilent SureSelect Human All Exon V4 kit (Agilent Technologies, CA, USA). 180-280 bp fragments were generated from 1 μg of genomic DNA with a M200 shearing system (Covaris, Massachusetts, USA), followed by end-repair, A-tailing, adapter ligation, PCR enrichment, and hybridization with biotin probes for capture with streptomycin. Indexing PCR was performed following library capture. These PCR products were then purified using the AMPureXP system and quantified using Agilent high sensitivity DNA assay with the Agilent Bioanalyzer 2100 system. Reads were done with HiSeq X Ten (Illumina, San Diego, CA) with paired-end 2x150bp sequencing settings for an average sequencing depth of approximately 43.5M reads.<sup>2</sup> The dataset from Rajamani et al. was then processed using the WES pipeline described by Meena et al. (Fig. 2)<sup>8</sup>
 
 ```{r patient table, echo=FALSE}
 tab <- read.csv("patient_info.csv")
