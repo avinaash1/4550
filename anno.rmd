@@ -139,7 +139,7 @@ echo "cName: $cName"
 	-csvout -polish -xref example/gene_xref.txt
 ```
 
-For readability, the BCF files were converted to VCF, then to avinput before annotation using ANNOVAR (2019Oct24 version), resulting in an annotated csv file for each sample. These files were then used to identify the number of SNVs and indels associated with each gene for each sample, adjusted for sequencing depth, leading to variants per billion BP of exome (V/GBP). Variants associated with multiple genes were counted multiple times. Principal component analysis (PCA) was performed on the dataset in order to identify which genes were responsible for the variance between the control and obese groups. These genes were then tested for significance using t-tests with Bonferroni correction. In addition, genes that had preferentially higher V/GBP in the obese group were identified based on mean difference in V/GBP between obese and control groups, and were tested for significance in the same manner. Variants found exclusively in the obese group were then mapped to their position within each chromosome with a bin width of 100000BP. ([See Appendix](#positionplot)) 
+For readability, the BCF files were converted to VCF, then to avinput before annotation using ANNOVAR (2019Oct24 version), resulting in an annotated csv file for each sample. These files were then used to identify the number of SNVs and indels associated with each gene for each sample, adjusted for sequencing depth, leading to variants per billion BP of exome (V/GBP). Variants associated with multiple genes were counted multiple times. Principal component analysis (PCA) was performed on the dataset in order to identify which genes were responsible for the variance between the control and obese groups. These genes were then tested for significance using t-tests with Bonferroni correction. In addition, genes that had preferentially higher V/GBP in the obese group were identified based on mean difference in V/GBP between obese and control groups, and were tested for significance in the same manner. Variants found exclusively in the obese group were then mapped to their position within each chromosome with a bin width of 100000BP.
 
 ## RScript for Post-Processing
 
@@ -592,7 +592,7 @@ rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/bedGraph
 
 Scaffolds not included.
 
-```{r position histogram, warning=FALSE}
+```{r position histogram, warning=FALSE, include=FALSE, eval=FALSE}
 #only do chromosomes 1-22, X/Y
 chr <- c(1:22,"X","Y")
 dif <-setdiff(dat,dat_c)
