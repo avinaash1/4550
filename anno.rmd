@@ -472,12 +472,19 @@ kable(mtable,caption="Table 3. T-Test for Genes with the Greatest Difference in 
 # same order
 meanplots <- mutate(meanplots, gene = factor(gene, levels = c("RBFOX1","DSCAM","SORCS2","PKD1L2","PRKN")))
 
+# stars
+
+sig <- as.data.frame(meanplots$mean)
+sig <- cbind(sig,c("","","","","","*", "*", "**", "***", "***"))
+colnames(sig) <- c("mean","star")
+
 ggplot(meanplots,aes(gene,mean,fill=group)) +
   geom_col(position="dodge") +
   geom_errorbar(aes(gene,ymin=mean-stdev,ymax=mean+stdev),width=0.2,position=position_dodge(0.9)) +
   ylab("Mean V/GBP") +
-  labs(caption="Figure 5. Genes with the most variants in super obese patients, relative to control") +
-  theme(plot.caption = element_text(hjust=0.45))
+  labs(caption="Figure 5. Genes with the most variants in super obese patients, relative to control. \n* for p < 0.05, ** for p < 0.01, ***  for p < 0.001") +
+  theme(plot.caption = element_text(hjust=0.45)) +
+  geom_text(data=sig, aes(meanplots$gene),label = sig$star, position=position_stack(), vjust=-2, hjust=-0.1)
 ```
 
 In addition to PCA, genes with the greatest difference in the number of V/GBP between the super obese and control groups were found (Table 3). Number of variants in RBFOX1, DSCAM, SORCS2, PKD1L2, and PRKN were all found to be significantly greater in super obese patients compared to the control (Table 4). Bonferroni corrected t-tests were done, and all 5 genes were found to have significantly different numbers of variants.
