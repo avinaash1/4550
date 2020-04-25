@@ -105,7 +105,7 @@ echo "-------filter-------"
 bcftools filter -i'%QUAL>20' $fileName.calls.bcf -Ov -o $fileName.calls.filtered.vcf
 ```
 
-Following pre-processing, SAMtools (1.10) was used to convert .sam files to sorted BAM files for further processing. In contrast to the original pipeline, variant calling and filtering was done using bcftools (1.9) rather than VarScan. VarScan requires SNVs and indels to be processed separately, whereas Binary Variant Call Format (BCF) / Variant Call Format (VCF) succinctly holds information for both variants. Thus, bcftools was used to create an mpileup using the sorted BAM files, followed by variant calling, and filtering. Filtering was done based on quality scores with a cutoff QUAL of 20. 
+Following pre-processing, SAMtools (1.10) was used to convert .sam files to sorted BAM files for further processing. In contrast to the original pipeline, variant calling and filtering was done using bcftools (1.9) rather than VarScan. VarScan requires SNVs and indels to be processed separately, whereas Binary Variant Call Format (BCF) / Variant Call Format (VCF) succinctly holds information for both variants. Thus, bcftools was used to create an mpileup file (containing the output of BCF/VCF files) from sorted BAM files, followed by variant calling, and filtering. Filtering was done based on quality scores with a cutoff QUAL of 20. 
 
 ```{bash, eval=FALSE}
 ########################## annotate ############################
