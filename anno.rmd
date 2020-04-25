@@ -23,7 +23,9 @@ The prevalence of obesity, defined as a Body Mass Index (BMI) ≥ 30, is documen
 
 Obesity is a polygenic disease with a number of causes. In general, obesity is determined by a combination of food intake, metabolic efficiency, and daily activity levels. This project focuses on the genetic factors contributing to increased food intake that lead some individuals to crave greater caloric intake. Food intake is determined primarily by appetite, hunger, and satiety signals that are produced by the hypothalamus in the central nervous system. These signals include neuropeptides such as neuropeptide Y (NPY) and α-melanocyte-stimulating hormone, as well as compounds that respond to peripheral signaling hormones that regulate food intake such as insulin, leptin, peptide YY, and ghrelin (Fig. 1).<sup>2,3</sup>  Furthermore, genome-wide association studies have shown that this signalling pathway has a genetic component.<sup>4</sup>  Mutations in hypothalamic-specific genes further suggest that the hypothalamus plays a central genetic component in obesity in humans.<sup>2</sup> 
 
-![Figure 1. Hypothalamic Regulation of Appetite<sup>5</sup>](figure1.png)
+<center>![Figure 1. Hypothalamic Regulation of Appetite<sup>5</sup>](figure1.png)
+
+Figure 1. Hypothalamic Regulation of Appetite<sup>5</sup></center>
 
 For this project, whole-exome sequencing (WES) analysis of hypothalamic neurons from obese patients was compared to a reference genome (GRCh38) via single-nucleotide variants (SNVs) and insertions and deletions (indels). The choice to use a reference genome for comparison was made due to the fact that identified genetic loci account for <3% of variation in BMI.<sup>4</sup>  In addition, patients with severe obesity are more likely to exhibit rare genetic variants. Thus, WES is a particularly effective sequencing method for studying severe obesity. WES is known to be most efficient in patients with extreme forms of common diseases for two main reasons. First, rare and low-frequency variants must have a high penetrance to allow statistical detection. In addition, sequencing variants in the protein coding sequence may be more likely to  have a stronger impact on phenotypes than variants in intergenic regions. Many known genetic causes of obesity are associated with a severe phenotype and have a larger impact on BMI. Because this project is studying subjects with BMI ≥ 50, or superobese subjects, WES is an optimal sequencing method.<sup>6</sup> 
 
@@ -36,14 +38,18 @@ Blood samples were obtained from 5 superobese patients (BMI ≥ 50) from Cedars 
 ```{r patient table, echo=FALSE}
 tab <- read.csv("patient_info.csv")
 colnames(tab)[1] <- "Run"
-kable(tab, caption = "Table 1. WES Sample Info, some info was not provided for control samples")
+kable(tab, caption = "Table 1. WES Sample Info")
 ```
+
+<sup>Some info was not provided for the control group</sup>
 
 ## WES Pipeline
 
-![Figure 2. The pipeline can be broken down into 3 steps: data pre-processing, variant discovery, and variant prioritization.](pipeline.jpg) 
+<center>![Figure 2. Overall WES Pipeline](pipeline.jpg)
 
-The pipeline was broken up into multiple scripts. As a result, repetitive, non-essential sections such as "module load" or "cd" were excluded.
+Figure 2. Overall WES Pipeline</center>
+
+Since the pipeline was broken up into multiple script, repetitive non-essential sections such as "module load" or "cd" were excluded from the following code chunks.
 
 ```{bash, eval=FALSE}
 ########################## pre-processing ############################
@@ -68,7 +74,7 @@ echo "aligning " $fileName
 bowtie2 -p 8 -x /scratch/pl9ed/project/refgenome/ref -1 ./"$fileName"_1.fastq -2 ./"$fileName"_2.fastq -S $fileName.sam
 ```
 
-The raw dataset was first downloaded from SRA into a scratch subfolder, which was then given read/write/execute permissions. The raw files were converted into both .fastq and .sam files using the SRAToolKit (2.9.1). Alignment was done using Bowtie2 (2.2.9) with the soft-masked, primary assembly reference genome (GRCh38) from ENSEMBL. FastQC (0.11.5) was used to conduct quality control checks on the dataset. Preprocessing resulted in a sam file for each sample.
+The WES pipeline can be broken down into 3 main steps: data pre-processing, variant discovery, and variant prioritization. First, the raw dataset was first downloaded from SRA into a scratch subfolder, which was then given read/write/execute permissions. The raw files were converted into both .fastq and .sam files using the SRAToolKit (2.9.1). Alignment was done using Bowtie2 (2.2.9) with the soft-masked, primary assembly reference genome (GRCh38) from ENSEMBL. FastQC (0.11.5) was used to conduct quality control checks on the dataset. Preprocessing resulted in a sam file for each sample.
 
 ```{bash, eval=FALSE}
 ########################## variant discovery ############################
@@ -131,11 +137,9 @@ echo "cName: $cName"
 	-operation gx,r,f,f,f \
 	-nastring . \
 	-csvout -polish -xref example/gene_xref.txt
-
-done
 ```
 
-For readability, the BCF files were converted to VCF, then to avinput before annotation using ANNOVAR (2019Oct24 version), resulting in an annotated csv file for each sample. These files were then used to identify the number of SNVs and indels associated with each gene for each sample, adjusted for sequencing depth, leading to variants per billion BP of exome (V/GBP). Variants associated with multiple genes were counted multiple times. Principal component analysis (PCA) was performed on the dataset in order to identify which genes were responsible for the variance between the control and obese groups. These genes were then tested for significance using t-tests with Bonferroni correction. In addition, genes that had preferentially higher V/GBP in the obese group were identified based on mean difference in V/GBP between obese and control groups, and were tested for significance in the same manner. Variants found exclusively in the obese group were then mapped to their position within each chromosome with a bin width of 100000BP. ([See Appendix](#positionplot))
+For readability, the BCF files were converted to VCF, then to avinput before annotation using ANNOVAR (2019Oct24 version), resulting in an annotated csv file for each sample. These files were then used to identify the number of SNVs and indels associated with each gene for each sample, adjusted for sequencing depth, leading to variants per billion BP of exome (V/GBP). Variants associated with multiple genes were counted multiple times. Principal component analysis (PCA) was performed on the dataset in order to identify which genes were responsible for the variance between the control and obese groups. These genes were then tested for significance using t-tests with Bonferroni correction. In addition, genes that had preferentially higher V/GBP in the obese group were identified based on mean difference in V/GBP between obese and control groups, and were tested for significance in the same manner. Variants found exclusively in the obese group were then mapped to their position within each chromosome with a bin width of 100000BP. ([See Appendix](#positionplot)) 
 
 ## RScript for Post-Processing
 
@@ -196,7 +200,7 @@ glist <- cSplit(glist,"gene",sep=";")
 # to: Rivanna
 ```
 
-Genes associated with each variant were identified. Intergenic variants are counted multiple times, once for each gene, using cSplit. glist is a table of genes associated with each variant. glist_u is a list of unique genes found within that list. 
+Genes associated with each variant were identified. Intergenic variants were counted multiple times, once for each gene, using cSplit. glist is a table of genes associated with each variant. glist_u is a list of unique genes found within that list. 
 
 ### Create Dataset of Variants per Billion BP of Exome
 
@@ -214,6 +218,8 @@ echo "$i, $gcount" >> ../gene_counts/$oName.count.csv
 
 ccount=$(grep $i $cName*.csv | wc -l)
 echo "$i, $ccount" >> ../gene_counts/$cName.count.csv
+
+done
 ```
 ```{r create count set}
 # control is actually counts for all 10
@@ -319,9 +325,16 @@ for (i in 6:10) {
 group <- factor(group)
 
 # plots
-plot(o_scores[,1],o_scores[,2],pch=21,bg=as.numeric(group),xlab="PC1",ylab="PC2", main="Score Plot")
-legend("bottomleft",levels(group),col=seq(along=levels(group)),pch=15,cex=1.0)
-# text(o_scores[1:10,1],o_scores[1:10,2],labels=rownames(o_scores[1:10,]),cex=0.7,adj=1)
+# plot(o_scores[,1],o_scores[,2],pch=21,bg=as.numeric(group),xlab="PC1",ylab="PC2", main="Score Plot")
+# legend("bottomleft",levels(group),col=seq(along=levels(group)),pch=15,cex=1.0)
+o_scores_p <- as.data.frame(o_scores)
+o_scores_p <- mutate(o_scores_p, group = "Control")
+o_scores_p$group[6:10] <- "Obese"
+rownames(o_scores_p) <- rownames(o_scores)
+ggplot(o_scores_p,aes(PC1,PC2,color=group)) +
+  geom_point() + 
+  labs(caption="Figure 3. Score Plot") +
+  theme(plot.caption = element_text(hjust=0.5))
 
 abs_load <- abs(o_load)
 load1 <- abs_load[order(abs_load[,1],decreasing=TRUE)[1:5],]
@@ -337,12 +350,13 @@ pl2 <- pl2[order(abs(pl2),decreasing=TRUE)]
 loading_gg <- as.data.frame(cbind(pl1,pl2))
 
 ggplot(loading_gg,aes(pl1,pl2)) +
-  geom_point(color="red") +
+  geom_point(color="red", size=3) +
   geom_segment(aes(0,0,xend=pl1,yend=pl2),arrow=arrow()) +
   geom_label_repel(aes(label=rownames(loading_gg)),box.padding=unit(0.4,'lines')) +
   xlab("PC1") +
   ylab("PC2") +
-  ggtitle("Loading Plot")
+  labs(caption="Figure 4. Loading Plot") +
+  theme(plot.caption = element_text(hjust=0.45))
 ```
 
 ```{r top5, message=FALSE}
@@ -462,7 +476,8 @@ ggplot(meanplots,aes(gene,mean,fill=group)) +
   geom_col(position="dodge") +
   geom_errorbar(aes(gene,ymin=mean-stdev,ymax=mean+stdev),width=0.2,position=position_dodge(0.9)) +
   ylab("Mean V/GBP") +
-  ggtitle("Genes with the most variants in super obese patients, relative to control")
+  labs(caption="Figure 5. Genes with the most variants in super obese patients, relative to control") +
+  theme(plot.caption = element_text(hjust=0.45))
 ```
 
 In addition to PCA, genes with the greatest difference in the number of V/GBP between the super obese and control groups were found (Table 3). Number of variants in RBFOX1, PKD1L2, DSCAM, SORCS2, and PRKN were all found to be significantly greater in super obese patients compared to the control (Table 4). Bonferroni corrected t-tests were done, and all 5 genes were found to be significantly different.
