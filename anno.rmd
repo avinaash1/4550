@@ -267,7 +267,16 @@ p_val_adj <- p.adjust(p_values,"bonferroni")
 p_val_adj <- as.data.frame(p_val_adj)
 rownames(p_val_adj) <- top5
 
-kable(p_val_adj,caption="Table 2. Bonferroni p-values")
+# means for table
+ctr_means <- colMeans(ctr_top5)
+ctr_sdev <- colSds(ctr_top5)
+ob_means <- colMeans(ob_top5)
+ob_sdev <- colSds(ob_top5)
+
+table2 <- do.call("cbind", list(ctr_means, ctr_sdev, ob_means, ob_sdev, p_val_adj))
+colnames(table2) <- c("Control Mean V/GBP", "Control Stdev", "Obese Mean V/GBP", "Obese Stdev", "Bonferroni p-value")
+
+kable(table2,caption="Table 2. T-Test for PC1 Loadings")
 
 ```
 
@@ -336,10 +345,10 @@ meanplots$gene[6:10] <- as.character(top5)
 colnames(meanplots)[2:3] <- c("mean", "stdev")
 
 mtable <- do.call("cbind", list(c_m,c_sds,o_m,o_sds,avg_dif[1:5,],p_val_adj))
-colnames(mtable) <- c("Control mean V/GBP", "Control SDev", "Obese Mean V/GBP", "Obese SDev", "Mean Difference", "Bonferroni p-value")
+colnames(mtable) <- c("Control mean V/GBP", "Control Stdev", "Obese Mean V/GBP", "Obese Stdev", "Mean Difference", "Bonferroni p-value")
 
 # mean diff table
-kable(mtable,caption="Table 3. Genes with the Greatest Difference in Number of Variants")
+kable(mtable,caption="Table 3. T-Test for Genes with the Greatest Difference in V/GBP")
 
 # same order
 meanplots <- mutate(meanplots, gene = factor(gene, levels = c("RBFOX1","DSCAM","SORCS2","PKD1L2","PRKN")))
